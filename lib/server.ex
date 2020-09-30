@@ -18,5 +18,14 @@ defmodule Server do
     # Uncomment this block to pass the first stage
     {:ok, socket} = :gen_tcp.listen(6379, [:binary, active: false, reuseaddr: true])
     {:ok, _client} = :gen_tcp.accept(socket)
+    socket |> read_line |> :gen_tcp.send(socket)
+  end
+
+  defp read_line(socket) do
+    {:ok, data} = :gen_tcp.recv(socket, 0)
+    case data do
+      "PING" -> "+PONG\r\n"
+       _ -> :error
+    end
   end
 end
