@@ -42,7 +42,7 @@ defmodule Server do
 
   defp write_line(line, socket) do
     case line do
-      "Ping\n" -> :gen_tcp.send(socket, "+PONG\r\n")
+      "Ping" -> :gen_tcp.send(socket, "+PONG\r\n")
        _ -> :gen_tcp.send(socket, "+PONG\r\n")
     end
   end
