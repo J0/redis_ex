@@ -7,7 +7,10 @@ defmodule Server do
   require Logger
 
   def start(_type, _args) do
-    Supervisor.start_link([{Task, fn -> Server.listen() end}], strategy: :one_for_one)
+    Supervisor.start_link(
+      [{Task.Supervisor, name: Server.TaskSupervisor}, {Task, fn -> Server.listen() end}],
+      strategy: :one_for_one
+    )
   end
 
   @doc """
@@ -22,9 +25,8 @@ defmodule Server do
 
   defp loop_acceptor(socket) do
     {:ok, client} = :gen_tcp.accept(socket)
-    Logger.info("test")
-    serve(client)
-    Logger.info("Accepting")
+    {:ok, pid} = Task.Supervisor.start_child(Server.TaskSupervisor, fn -> serve(client) end)
+    :ok = :gen_tcp.controlling_process(client, pid)
     loop_acceptor(socket)
   end
 
@@ -32,6 +34,7 @@ defmodule Server do
     client
     |> read_line()
     |> write_line(client)
+
     serve(client)
   end
 
@@ -43,7 +46,7 @@ defmodule Server do
   defp write_line(line, socket) do
     case line do
       "Ping" -> :gen_tcp.send(socket, "+PONG\r\n")
-       _ -> :gen_tcp.send(socket, "+PONG\r\n")
+      _ -> :gen_tcp.send(socket, "+PONG\r\n")
     end
   end
 end
