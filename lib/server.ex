@@ -46,9 +46,9 @@ defmodule Server do
   defp write_line(line, socket) do
     command_arr = String.split(line, "\\r\\n")
     echo_statement = Enum.at(command_arr, -2)
-
+    IO.inspect(line)
     case line do
-      "Ping" -> :gen_tcp.send(socket, "+PONG\r\n")
+      "PING\n" -> :gen_tcp.send(socket, "+PONG\r\n")
       _ -> :gen_tcp.send(socket, "+#{echo_statement}\r\n")
     end
   end
