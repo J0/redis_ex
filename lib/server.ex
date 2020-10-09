@@ -44,7 +44,7 @@ defmodule Server do
   end
 
   defp write_line(line, socket) do
-    command_arr = String.split(line, "\\r\\n")
+    command_arr = String.split(line, "\r\n")
     echo_statement = Enum.at(command_arr, -2)
     IO.inspect(line)
     IO.inspect(echo_statement)
