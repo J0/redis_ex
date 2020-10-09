@@ -48,7 +48,7 @@ defmodule Server do
     echo_statement = Enum.at(command_arr, -2)
     IO.inspect(line)
     case line do
-      "PING\n" -> :gen_tcp.send(socket, "+PONG\r\n")
+      "*1\r\n$4\r\nping\r\n" -> :gen_tcp.send(socket, "+PONG\r\n")
       _ -> :gen_tcp.send(socket, "+#{echo_statement}\r\n")
     end
   end
