@@ -50,7 +50,7 @@ defmodule Server do
     IO.inspect(echo_statement)
     case line do
       "*1\r\n$4\r\nping\r\n" -> :gen_tcp.send(socket, "+PONG\r\n")
-      _ -> :gen_tcp.send(socket, "#{echo_statement}\r\n")
+      _ -> :gen_tcp.send(socket, "+#{echo_statement}\r\n")
     end
   end
 end
