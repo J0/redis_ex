@@ -52,6 +52,7 @@ defmodule Server do
     key = Enum.at(command_arr, -2)
     val = Enum.at(command_arr, -4)
     :ets.insert(:kv, {key, val})
+    IO.inspect(:ets.lookup(:kv,key))
   end
 
   defp get(command_arr) do
@@ -63,6 +64,7 @@ defmodule Server do
     command = Enum.at(command_arr, 2) |>String.downcase
     IO.inspect(command_arr)
     IO.inspect(command)
+    IO.inspect(line)
     case command do
       "ping" -> :gen_tcp.send(socket, "+PONG\r\n")
       "set"-> set(command_arr)
