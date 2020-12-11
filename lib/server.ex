@@ -60,7 +60,7 @@ defmodule Server do
     key = Enum.at(command_arr, -2)
     res = :ets.match(:kv, {key, :"$1"})
     IO.inspect(res)
-    :gen_tcp.send(socket, "#{res}\r\n")
+    :gen_tcp.send(socket, "+#{res}\r\n")
 
 
     
