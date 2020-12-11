@@ -49,11 +49,14 @@ defmodule Server do
   end
 
   defp set(command_arr) do
-    :ets.insert(:kv, {"somestuff", "adgf"})
+    key = Enum.at(command_arr, -2)
+    val = Enum.at(command_arr, -4)
+    :ets.insert(:kv, {key, val})
   end
 
   defp get(command_arr) do
-    :ets.lookup(:kv, "")
+    key = Enum.at(command_arr, -2)
+    :ets.lookup(:kv, key)
   end
   defp write_line(line, socket) do
     command_arr = String.split(line, "\r\n")
