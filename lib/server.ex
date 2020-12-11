@@ -48,27 +48,34 @@ defmodule Server do
     :gen_tcp.send(socket, "+#{echo_statement}\r\n")
   end
 
-  defp set(command_arr) do
+  defp set(socket, command_arr) do
     key = Enum.at(command_arr, -2)
     val = Enum.at(command_arr, -4)
     :ets.insert(:kv, {key, val})
     IO.inspect(:ets.lookup(:kv,key))
+    :gen_tcp.send(socket, "+OK\r\n")
   end
 
-  defp get(command_arr) do
+  defp get(socket, command_arr) do
     key = Enum.at(command_arr, -2)
-    :ets.lookup(:kv, key)
+    res = :ets.match(:kv, {key, :"$1"})
+    IO.inspect(res)
+    :gen_tcp.send(socket, "#{res}\r\n")
+
+
+    
   end
   defp write_line(line, socket) do
     command_arr = String.split(line, "\r\n")
+    IO.inspect(command_arr)
     command = Enum.at(command_arr, 2) |>String.downcase
     IO.inspect(command_arr)
     IO.inspect(command)
     IO.inspect(line)
     case command do
       "ping" -> :gen_tcp.send(socket, "+PONG\r\n")
-      "set"-> set(command_arr)
-      "get"-> get(command_arr)
+      "set"-> set(socket, command_arr)
+      "get"-> get(socket, command_arr)
       "echo"-> echo(socket,command_arr)
       _ -> :gen_tcp.send(socket, "Nope")
     end
