@@ -89,7 +89,7 @@ defmodule Server do
     IO.puts(result)
     IO.puts(expiration)
     IO.puts("System time")
-    IO.puts(os.system_time(:milisecond))
+    IO.puts(:os.system_time(:milisecond))
     cond do
       expiration > :os.system_time(:millisecond) -> result
       "X" -> result
