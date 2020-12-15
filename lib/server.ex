@@ -29,7 +29,7 @@ defmodule Server do
     loop_acceptor(socket)
   end
 
-  defp serve(client) do
+ defp serve(client) do
     client
     |> read_line()
     |> write_line(client)
@@ -42,9 +42,11 @@ defmodule Server do
     data
   end
 
+  @doc """
+  Take in an input and reply with the exact same statement
+  """
   defp echo(socket, command_arr) do
     echo_statement = Enum.at(command_arr, -2)
-    IO.inspect(echo_statement)
     :gen_tcp.send(socket, "+#{echo_statement}\r\n")
   end
 
@@ -57,22 +59,23 @@ defmodule Server do
     :gen_tcp.send(socket, "+OK\r\n")
   end
 
+  @doc """
+  Set a key to a particular value with a timeout value defined by the flag PX
+  """
   defp set_px(command_arr) do
-    IO.inspect("Set px ")
+    # Assumea fixed position within the array
     key = Enum.at(command_arr, -8)
     val = Enum.at(command_arr, -6)
     expiry = :os.system_time(:millisecond) + String.to_integer(Enum.at(command_arr, -2))
-    IO.inspect(expiry)
     :ets.insert(:kv, {key, val, expiry})
-    IO.inspect(:ets.lookup(:kv,key))
   end
 
   defp set_reg(command_arr) do
     key = Enum.at(command_arr, -2)
     val = Enum.at(command_arr, -4)
+    # Define X to be a marker for no expiry
     expiry = "X"
     :ets.insert(:kv, {key, val, expiry})
-    IO.inspect(:ets.lookup(:kv,key))
   end
 
   defp get(socket, command_arr) do
@@ -81,11 +84,10 @@ defmodule Server do
     :gen_tcp.send(socket, "#{res}\r\n")
   end
 
+  @doc """
+  Validate if a value has expired if an expiry time has been set. Else return null bulk string.
+  """
   defp check_freshness([result, expiration]) do
-    IO.puts(result)
-    IO.puts(expiration)
-    IO.puts("System time")
-    IO.puts(:os.system_time(:millisecond))
     cond do
       expiration > :os.system_time(:millisecond) -> "+#{result}"
       expiration == "X" -> "+#{result}"
@@ -95,17 +97,13 @@ defmodule Server do
 
   defp write_line(line, socket) do
     command_arr = String.split(line, "\r\n")
-    IO.inspect(command_arr)
     command = Enum.at(command_arr, 2) |>String.downcase
-    IO.inspect(command_arr)
-    IO.inspect(command)
-    IO.inspect(line)
     case command do
       "ping" -> :gen_tcp.send(socket, "+PONG\r\n")
       "set"-> set(socket, command_arr)
       "get"-> get(socket, command_arr)
       "echo"-> echo(socket,command_arr)
-      _ -> :gen_tcp.send(socket, "Nope")
+      _ -> nil
     end
   end
 end
