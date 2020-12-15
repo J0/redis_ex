@@ -61,7 +61,6 @@ defmodule Server do
     IO.inspect("Set px ")
     key = Enum.at(command_arr, -8)
     val = Enum.at(command_arr, -6)
-    IO.inspect(val)
     expiry = :os.system_time(:millisecond) + String.to_integer(Enum.at(command_arr, -2))
     IO.inspect(expiry)
     :ets.insert(:kv, {key, val, expiry})
@@ -78,10 +77,7 @@ defmodule Server do
 
   defp get(socket, command_arr) do
     key = Enum.at(command_arr, -2)
-    res = :ets.match(:kv, {key, :"$1", :"$2"})
-    IO.inspect(List.flatten(res))
-    IO.inspect("Before freshness")
-    res = check_freshness(List.flatten(res))
+    res = :ets.match(:kv, {key, :"$1", :"$2"}) |> List.flatten() |> check_freshness()
     :gen_tcp.send(socket, "#{res}\r\n")
   end
 
