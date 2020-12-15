@@ -95,7 +95,6 @@ defmodule Server do
       "X" -> result
       :else -> "$-1\r\n"
     end
-    IO.puts(result)
   end
 
   defp write_line(line, socket) do
