@@ -49,22 +49,52 @@ defmodule Server do
   end
 
   defp set(socket, command_arr) do
+    val = Enum.at(command_arr, -4)
+    case val do
+      "px" -> set_px(command_arr)
+      _ -> set_reg(command_arr)
+    end
+    :gen_tcp.send(socket, "+OK\r\n")
+  end
+
+  defp set_px(command_arr) do
+    IO.inspect("Set px ")
+    key = Enum.at(command_arr, -8)
+    val = Enum.at(command_arr, -6)
+    IO.inspect(val)
+    expiry = :os.system_time(:millisecond) + String.to_integer(Enum.at(command_arr, -2))
+    IO.inspect(expiry)
+    :ets.insert(:kv, {key, val, expiry})
+    IO.inspect(:ets.lookup(:kv,key))
+  end
+
+  defp set_reg(command_arr) do
     key = Enum.at(command_arr, -2)
     val = Enum.at(command_arr, -4)
-    :ets.insert(:kv, {key, val})
+    expiry = "X"
+    :ets.insert(:kv, {key, val, expiry})
     IO.inspect(:ets.lookup(:kv,key))
-    :gen_tcp.send(socket, "+OK\r\n")
   end
 
   defp get(socket, command_arr) do
     key = Enum.at(command_arr, -2)
-    res = :ets.match(:kv, {key, :"$1"})
-    IO.inspect(res)
+    res = :ets.match(:kv, {key, :"$1", :"$2"})
+    IO.inspect(List.flatten(res))
+    IO.inspect("Before freshness")
+    res = check_freshness(List.flatten(res))
     :gen_tcp.send(socket, "+#{res}\r\n")
-
-
-    
   end
+
+  defp check_freshness([result, expiration]) do
+    IO.puts(result)
+    IO.puts(expiration)
+    cond do
+      expiration > :os.system_time(:millisecond) -> result
+      "X" -> result
+      :else -> nil
+    end
+  end
+
   defp write_line(line, socket) do
     command_arr = String.split(line, "\r\n")
     IO.inspect(command_arr)
