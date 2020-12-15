@@ -82,7 +82,7 @@ defmodule Server do
     IO.inspect(List.flatten(res))
     IO.inspect("Before freshness")
     res = check_freshness(List.flatten(res))
-    :gen_tcp.send(socket, "+#{res}\r\n")
+    :gen_tcp.send(socket, "#{res}\r\n")
   end
 
   defp check_freshness([result, expiration]) do
@@ -91,9 +91,9 @@ defmodule Server do
     IO.puts("System time")
     IO.puts(:os.system_time(:millisecond))
     cond do
-      expiration > :os.system_time(:millisecond) -> result
-      expiration == "X" -> result
-      :else -> "$-1\r\n"
+      expiration > :os.system_time(:millisecond) -> "+#{result}"
+      expiration == "X" -> "+#{result}"
+      :else -> "$-1"
     end
   end
 
