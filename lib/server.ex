@@ -4,9 +4,16 @@ defmodule Server do
   """
   use Application
   require Logger
+  @key_pos Application.get_env(:redis, :key_pos)
+  @value_pos Application.get_env(:redis, :value_pos)
+  @command_pos Application.get_env(:redis, :command_pos)
+  @noexpiry Application.get_env(:redis, :noexpiry)
+  @setpx_key_pos Application.get_env(:redis, :setpx_key_pos)
+  @setpx_value_pos Application.get_env(:redis, :setpx_val_pos)
 
   def start(_type, _args) do
     :ets.new(:kv, [:set, :public, :named_table])
+
     Supervisor.start_link(
       [{Task.Supervisor, name: Server.TaskSupervisor}, {Task, fn -> Server.listen() end}],
       strategy: :one_for_one
@@ -29,7 +36,7 @@ defmodule Server do
     loop_acceptor(socket)
   end
 
- defp serve(client) do
+  defp serve(client) do
     client
     |> read_line()
     |> write_line(client)
@@ -45,64 +52,63 @@ defmodule Server do
   @doc """
   Take in an input and reply with the exact same statement
   """
-  defp echo(socket, command_arr) do
+  def echo(socket, command_arr) do
     echo_statement = Enum.at(command_arr, -2)
     :gen_tcp.send(socket, "+#{echo_statement}\r\n")
   end
 
-  defp set(socket, command_arr) do
-    val = Enum.at(command_arr, -4)
+  def set(socket, command_arr) do
+    val = Enum.at(command_arr, @value_pos)
+
     case val do
       "px" -> set_px(command_arr)
       _ -> set_reg(command_arr)
     end
+
     :gen_tcp.send(socket, "+OK\r\n")
   end
 
   @doc """
   Set a key to a particular value with a timeout value defined by the flag PX
   """
-  defp set_px(command_arr) do
-    # Assumea fixed position within the array
-    key = Enum.at(command_arr, -8)
-    val = Enum.at(command_arr, -6)
+  def set_px(command_arr) do
+    # Assume a fixed position within the array
+    key = Enum.at(command_arr, @setpx_key_pos)
+    val = Enum.at(command_arr, @setpx_value_pos)
     expiry = :os.system_time(:millisecond) + String.to_integer(Enum.at(command_arr, -2))
     :ets.insert(:kv, {key, val, expiry})
   end
 
-  defp set_reg(command_arr) do
-    key = Enum.at(command_arr, -2)
-    val = Enum.at(command_arr, -4)
+  def set_reg(command_arr) do
+    key = Enum.at(command_arr, @key_pos)
+    val = Enum.at(command_arr, @value_pos)
     # Define X to be a marker for no expiry
-    expiry = "X"
-    :ets.insert(:kv, {key, val, expiry})
+    :ets.insert(:kv, {key, val, @noexpiry})
   end
 
-  defp get(socket, command_arr) do
-    key = Enum.at(command_arr, -2)
+  def get(socket, command_arr) do
+    key = Enum.at(command_arr, @key_pos)
     res = :ets.match(:kv, {key, :"$1", :"$2"}) |> List.flatten() |> check_freshness()
     :gen_tcp.send(socket, "#{res}\r\n")
   end
 
-  @doc """
-  Validate if a value has expired if an expiry time has been set. Else return null bulk string.
-  """
   defp check_freshness([result, expiration]) do
     cond do
       expiration > :os.system_time(:millisecond) -> "+#{result}"
-      expiration == "X" -> "+#{result}"
+      expiration == @noexpiry -> "+#{result}"
       :else -> "$-1"
     end
   end
 
   defp write_line(line, socket) do
     command_arr = String.split(line, "\r\n")
-    command = Enum.at(command_arr, 2) |>String.downcase
+    command = Enum.at(command_arr, @command_pos) |> String.downcase()
+
     case command do
       "ping" -> :gen_tcp.send(socket, "+PONG\r\n")
-      "set"-> set(socket, command_arr)
-      "get"-> get(socket, command_arr)
-      "echo"-> echo(socket,command_arr)
+      "set" -> set(socket, command_arr)
+      "get" -> get(socket, command_arr)
+      "echo" -> echo(socket, command_arr)
       _ -> nil
     end
   end
